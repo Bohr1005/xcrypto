@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
 ## Risk Warning
 
-It is a personal project, use at your own risk. I will not be responsible for your investment losses.
+It is a personal project, use at your own risk. I will not be responsible for your investment losses (and gains).
 Cryptocurrency investment is subject to high market risk.
 
 ## Prerequisites
