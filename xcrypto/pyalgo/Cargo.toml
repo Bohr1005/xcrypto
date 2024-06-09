@@ -1,0 +1,26 @@
+[package]
+name = "pyalgo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "pyalgo"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = {version = "0.21.2", features = ["chrono", "extension-module"]}
+logger = {path="../logger"}
+log = "0.4.21"
+xcrypto = {path = "../"}
+chrono = "0.4.38"
+serde = {version = "1.0.198", features = ["derive"]}
+serde_json = "1.0.116"
+chrono-tz = "0.9.0"
+anyhow = "1.0.83"
+url = "2.5.0"
+crossbeam-channel = "0.5.12"
+websocket = "0.27.1"
+reqwest = {version = "0.12.4", features = ["blocking", "json"]}
+openssl = "0.10.64"
+base64 = "0.22.1"

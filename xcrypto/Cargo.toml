@@ -1,0 +1,23 @@
+workspace = { members = ["binance", "binance/spot", "binance/usdt", "logger", "pyalgo"] }
+[package]
+name = "xcrypto"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.82"
+futures-util = "0.3.30"
+log = "0.4.21"
+openssl = "0.10.64"
+reqwest = {version = "0.12.4", features = ["json"]}
+serde = {version = "1.0.198", features = ["derive"]}
+tokio = {version = "1.37.0", features = ["full"] }
+url = "2.5.0"
+websocket = {package = "tokio-tungstenite" ,version = "0.21.0", features = ["native-tls"]}
+native-json = "1.2.10"
+logger = {path="logger"}
+serde_json = "1.0.116"
+base64 = "0.22.1"
+sqlx = {version = "0.7.4", features = ["sqlite","runtime-tokio"]}

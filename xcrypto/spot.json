@@ -1,0 +1,6 @@
+{
+    "apikey": "your api key",
+    "pem": "private_key.pem",
+    "margin": false,
+    "local": "ws://localhost:8111"
+}

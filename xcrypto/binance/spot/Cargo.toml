@@ -1,0 +1,20 @@
+[package]
+name = "spot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.21"
+native-json = "1.2.10"
+serde = {version = "1.0.198", features = ["derive"]}
+tokio = {version = "1.37.0", features = ["full"] }
+anyhow = "1.0.82"
+serde_json = "1.0.116"
+clap = {version = "4.5.4", features = ["derive"] }
+futures = "0.3.30"
+binance = {path ="../"}
+xcrypto = {path ="../../"}
+logger = {path ="../../logger"}
+url = "2.5.0"
