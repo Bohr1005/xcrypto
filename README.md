@@ -116,7 +116,7 @@ You can also set `trading=False`, in which case, the session will not support tr
 
 ## Build rust binary
 
-For simplicity, the system only supports trading for spot account and cross-margin account, and does not support trading for isolated-margin accounts.
+For simplicity, the system only supports trading for spot account and futures cross-margin account, and does not support trading for isolated-margin accounts.
 
 The supported market data includes depth and kline data for all periods, which is sufficient for most strategies to use.
 
@@ -340,7 +340,7 @@ if __name__ == "__main__":
 
 ## Donation
 
-Open source is not easy. Please give the author some encouragement. Treat the author to a cup of Mixue or Luckin Coffee, your Issues will be resolved first.
+Open source is not easy. Please give the author some encouragement. Treat the author a cup of Mixue or Luckin Coffee, your Issues will be resolved first.
 
 ![alipay](static/alipay.jpeg) 
 ![alipay](static/wechat.jpeg)
