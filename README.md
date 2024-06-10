@@ -317,7 +317,7 @@ class Demo:
         
         if self.smtord.is_active:
             # if our prc < best bid, kill it
-            if self.smtord.price <> self.sub.bid_prc(0):
+            if self.smtord.price < self.sub.bid_prc(0):
                 self.smtord.kill()
 
         else:
