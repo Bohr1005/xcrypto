@@ -282,7 +282,7 @@ if __name__ == "__main__":
     # set callback
     # when you recv depth, it will print data
     sub.on_data = lambda x:print(x)
-    eng.start()
+    eng.run()
 ```
 
 - **DepthSubscription**, with this class, you can obtain the depth of market data, contract information, and net position.
