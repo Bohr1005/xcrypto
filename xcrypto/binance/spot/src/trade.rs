@@ -84,9 +84,7 @@ impl Trade for SpotTrade {
     }
 
     async fn process(&mut self) -> anyhow::Result<bool> {
-        let msg = tokio::select! {
-            res = self.account.process() => res,
-        }?;
+        let msg = self.account.process().await?;
 
         if let Some(Message::Text(s)) = msg {
             if let Event::ExecutionReport(order) = serde_json::from_str::<Event>(&s)? {

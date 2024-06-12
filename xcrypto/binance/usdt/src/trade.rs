@@ -291,7 +291,7 @@ impl Trade for UsdtTrade {
                 }
             }
             None => match stream {
-                "depth" | "bookicker" => true,
+                "depth" => true,
                 _ => false,
             },
         }

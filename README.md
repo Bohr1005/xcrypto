@@ -30,27 +30,25 @@ class Demo:
         self.sub.on_order = self.on_order
 
     def on_order(self, order: Order):
-        print(order)
+        info(f"{order}")
 
     def on_depth(self, depth: Depth):
-        print(self.sub.datetime, self.sub.symbol)
+        info(f"{self.sub.datetime}, {self.sub.symbol}")
+
+        if self.fin:
+            self.smtord.kill()
 
         match self.sub.phase:
             case Phase.OPEN:
                 if self.sub.net == 0:
-                    if not self.fin:
-                        if self.smtord.is_active:
-                            self.smtord.kill()
-
-                        else:
-                            self.smtord.send(
-                                self.sub.bid_prc(5),
-                                10,
-                                Side.BUY,
-                                OrderType.LIMIT,
-                                Tif.GTC,
-                            )
-                            self.fin = True
+                    self.smtord.send(
+                        self.sub.bid_prc(5),
+                        10,
+                        Side.BUY,
+                        OrderType.LIMIT,
+                        Tif.GTC,
+                    )
+                    self.fin = True
 
             case Phase.CLOSE:
                 # todo
@@ -308,7 +306,7 @@ class Demo:
         self.sub.on_data = self.on_depth
 
     def on_order(self, order: Order):
-        print(order)
+        info(f"{order}")
 
     def on_depth(self, _: Depth):
         if self.fin:
