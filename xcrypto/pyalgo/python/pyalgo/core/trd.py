@@ -42,10 +42,6 @@ class Tradable:
         return self.subscription.lot
 
     @property
-    def market_lot(self) -> float:
-        return self.subscription.market_lot
-
-    @property
     def min_notional(self) -> float:
         return self.subscription.min_notional
 
