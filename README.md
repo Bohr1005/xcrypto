@@ -37,6 +37,7 @@ class Demo:
 
         if self.fin:
             self.smtord.kill()
+            return
 
         match self.sub.phase:
             case Phase.OPEN:
