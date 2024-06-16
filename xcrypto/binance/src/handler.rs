@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 #[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
+#[cfg(windows)]
 use tokio::signal::windows::{ctrl_break, ctrl_c};
 
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
