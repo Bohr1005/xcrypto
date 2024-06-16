@@ -3,7 +3,11 @@ use crate::{BinanceCancel, BinanceOrder, Trade};
 use log::*;
 use std::collections::HashMap;
 use std::net::SocketAddr;
+#[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
+#[cfg(windows)]
+use tokio::signal::windows::{ctrl_break, ctrl_c};
+
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::time::Duration;
 use xcrypto::chat::{Login, PositionReq, PositionRsp, Request};
@@ -238,8 +242,14 @@ impl Handler {
         trade: &mut T,
     ) -> anyhow::Result<()> {
         self.keep_running = true;
+        #[cfg(unix)]
         let mut terminate = signal(SignalKind::terminate())?;
+        #[cfg(unix)]
         let mut interrupt = signal(SignalKind::interrupt())?;
+        #[cfg(windows)]
+        let mut terminate = ctrl_c()?;
+        #[cfg(windows)]
+        let mut interrupt = ctrl_break()?;
 
         while self.keep_running {
             tokio::select! {
