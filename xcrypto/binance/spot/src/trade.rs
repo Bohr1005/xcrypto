@@ -309,7 +309,10 @@ impl Trade for SpotTrade {
                     _ => false,
                 }
             }
-            None => return stream == "depth",
+            None => match stream {
+                "depth" | "bbo" => true,
+                _ => false,
+            },
         }
     }
 

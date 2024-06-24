@@ -97,7 +97,7 @@ impl Handler {
 
         match trade.handle_subscribe(addr, &mut req) {
             Some(e) => market.reply(addr, req.id, e)?,
-            None => market.handle_subscribe(addr, &req).await?,
+            None => market.handle_subscribe(addr, &mut req).await?,
         }
         Ok(())
     }

@@ -9,6 +9,31 @@ use xcrypto::chat::*;
 
 use crate::{ListenKey, OrderTrait};
 
+fn now() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(into = "Depth<BinanceQuote>")]
+pub struct BinanceBookTicker {
+    #[serde(default = "now")]
+    E: i64,
+    #[serde(deserialize_with = "deserialize_symbol")]
+    s: String,
+    b: String,
+    B: String,
+    a: String,
+    A: String,
+}
+
+impl BinanceBookTicker {
+    pub fn stream(&self) -> String {
+        format!("{}@bbo", self.s)
+    }
+}
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KlineData {
     pub t: i64,
@@ -139,6 +164,24 @@ impl From<BinanceDepth> for Depth<BinanceQuote> {
             stream: format!("{}@depth", value.s),
             bids: value.b,
             asks: value.a,
+        }
+    }
+}
+
+impl From<BinanceBookTicker> for Depth<BinanceQuote> {
+    fn from(value: BinanceBookTicker) -> Self {
+        Depth {
+            time: value.E,
+            symbol: value.s.clone(),
+            stream: format!("{}@bbo", value.s),
+            bids: vec![BinanceQuote {
+                price: value.b.parse().unwrap_or_default(),
+                quantity: value.B.parse().unwrap_or_default(),
+            }],
+            asks: vec![BinanceQuote {
+                price: value.a.parse().unwrap_or_default(),
+                quantity: value.A.parse().unwrap_or_default(),
+            }],
         }
     }
 }
@@ -340,6 +383,7 @@ pub struct BinanceCancel {
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum MarketStream {
+    BookTicker(BinanceBookTicker),
     Depth(BinanceDepth),
     Kline(BinanceKline),
 }
@@ -646,6 +690,7 @@ impl OrderTrait for OrderUpdate {
         Ok(self.o.l.parse::<f64>()?)
     }
 }
+
 impl From<OrderUpdate> for Order {
     fn from(value: OrderUpdate) -> Self {
         let o = value.o;
@@ -801,6 +846,24 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_bookticker() {
+        let s = r#"{
+                        "u":400900217,    
+                        "s":"BNBUSDT",      
+                        "b":"25.35190000",
+                        "B":"31.21000000",
+                        "a":"25.36520000",
+                        "A":"40.66000000" 
+                        }"#;
+        let ticker: BinanceBookTicker = serde_json::from_str(&s).unwrap();
+        println!("{:?}", ticker);
+
+        let depth: Depth<BinanceQuote> = ticker.into();
+        println!("{:?}", depth);
+        assert_eq!(depth.stream, "bnbusdt@bbo");
+    }
 
     #[test]
     fn test_depth() {

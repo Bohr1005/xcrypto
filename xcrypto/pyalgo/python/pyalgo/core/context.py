@@ -50,18 +50,22 @@ class Context(ContextBase):
         key = symbol + "@" + stream
 
         if stream.startswith("kline"):
-            depth = BarSubscription(sub, self)
-            self.subscriptions[key] = depth
-            self.tradings[symbol] = depth
-
-            return depth
-
-        elif stream == "depth":
-            bar = DepthSubscription(sub, self)
+            bar = BarSubscription(sub, self)
             self.subscriptions[key] = bar
             self.tradings[symbol] = bar
 
             return bar
+
+        match stream:
+            case "depth" | "bbo":
+                depth = DepthSubscription(sub, self)
+                self.subscriptions[key] = depth
+                self.tradings[symbol] = depth
+
+                return depth
+
+            case _:
+                raise Exception(f"Unsupported stream {stream}")
 
     def process(self):
         if event := self.session.process():

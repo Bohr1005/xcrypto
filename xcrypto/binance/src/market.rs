@@ -233,7 +233,7 @@ impl Market {
     pub async fn handle_subscribe(
         &mut self,
         addr: &SocketAddr,
-        req: &Request<Vec<String>>,
+        req: &mut Request<Vec<String>>,
     ) -> anyhow::Result<()> {
         if !self.validate_login(addr) {
             return self.reply(
@@ -260,7 +260,7 @@ impl Market {
                     }
                 }
 
-                let symbol = symbol.replace(":", "_");
+                let symbol = symbol.replace(":", "_").replace("bbo", "bookTicker");
                 symbols.push(symbol);
             }
 

@@ -55,6 +55,11 @@ impl Subscriber {
 
     pub fn forward(&self, stream: &mut MarketStream) -> anyhow::Result<()> {
         match stream {
+            MarketStream::BookTicker(book) => {
+                if self.is_subscribed(&book.stream()) {
+                    self.tx.send(Message::Text(serde_json::to_string(&book)?))?;
+                }
+            }
             MarketStream::Depth(depth) => {
                 if depth.bid(0) < depth.bid(1) {
                     depth.reverse();
