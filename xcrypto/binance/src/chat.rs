@@ -5,6 +5,7 @@ use serde::{
     ser::SerializeStruct,
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use std::fmt::Debug;
 use xcrypto::chat::*;
 
 use crate::{ListenKey, OrderTrait};
@@ -16,66 +17,62 @@ fn now() -> i64 {
         .as_millis() as i64
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(into = "Depth<BinanceQuote>")]
-pub struct BinanceBookTicker {
-    #[serde(default = "now")]
-    E: i64,
-    #[serde(deserialize_with = "deserialize_symbol")]
-    s: String,
-    b: String,
-    B: String,
-    a: String,
-    A: String,
+json! {BinanceBookTicker {
+    stream: String,
+    data: {
+        E: Option<i64>,
+        s: String,
+        b: String,
+        B: String,
+        a: String,
+        A: String
+        }
+    }
 }
 
 impl BinanceBookTicker {
-    pub fn stream(&self) -> String {
-        format!("{}@bbo", self.s)
-    }
-}
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct KlineData {
-    pub t: i64,
-    pub T: i64,
-    pub i: String,
-    pub f: i64,
-    pub L: i64,
-    pub o: String,
-    pub c: String,
-    pub h: String,
-    pub l: String,
-    pub v: String,
-    pub x: bool,
-    pub q: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(into = "Kline")]
-pub struct BinanceKline {
-    #[serde(deserialize_with = "deserialize_symbol")]
-    pub s: String,
-    pub k: KlineData,
-}
-
-impl BinanceKline {
-    pub fn stream(&self) -> String {
-        format!("{}@kline:{}", self.s, self.k.i)
+    pub fn stream(&self) -> &String {
+        &self.stream
     }
 }
 
-impl From<BinanceKline> for Kline {
-    fn from(value: BinanceKline) -> Self {
-        Kline {
-            time: value.k.T,
-            symbol: value.s.clone(),
-            stream: format!("{}@kline:{}", value.s, value.k.i),
-            open: value.k.o.parse().unwrap_or_default(),
-            high: value.k.h.parse().unwrap_or_default(),
-            low: value.k.l.parse().unwrap_or_default(),
-            close: value.k.c.parse().unwrap_or_default(),
-            volume: value.k.v.parse().unwrap_or_default(),
-            amount: value.k.q.parse().unwrap_or_default(),
+impl From<BinanceBookTicker> for Depth<BinanceQuote> {
+    fn from(value: BinanceBookTicker) -> Self {
+        Depth {
+            time: value.data.E.unwrap_or(now()),
+            symbol: value.data.s.to_lowercase(),
+            stream: format!("{}@bbo", value.data.s).to_lowercase(),
+            bids: vec![BinanceQuote {
+                price: value.data.b.parse().unwrap_or_default(),
+                quantity: value.data.B.parse().unwrap_or_default(),
+            }],
+            asks: vec![BinanceQuote {
+                price: value.data.a.parse().unwrap_or_default(),
+                quantity: value.data.A.parse().unwrap_or_default(),
+            }],
+        }
+    }
+}
+
+json! {BinanceKline {
+        stream: String,
+        data: {
+            e:String,
+            E:i64,
+            s:String,
+            k:{
+                t: i64,
+                T: i64,
+                i: String,
+                f: i64,
+                o: String,
+                c: String,
+                h: String,
+                l: String,
+                v: String,
+                x: bool,
+                q: String,
+            }
         }
     }
 }
@@ -84,39 +81,6 @@ impl From<BinanceKline> for Kline {
 pub struct BinanceQuote {
     price: f64,
     quantity: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(into = "Depth<BinanceQuote>")]
-pub struct BinanceDepth {
-    pub E: i64,
-    #[serde(deserialize_with = "deserialize_symbol")]
-    s: String,
-    b: Vec<BinanceQuote>,
-    a: Vec<BinanceQuote>,
-}
-
-impl BinanceDepth {
-    pub fn stream(&self) -> String {
-        format!("{}@depth", self.s)
-    }
-
-    pub fn reverse(&mut self) {
-        self.b.reverse();
-    }
-
-    pub fn bid(&self, level: usize) -> f64 {
-        match self.b.get(level) {
-            Some(bid) => bid.price,
-            None => 0.0,
-        }
-    }
-    pub fn ask(&self, level: usize) -> f64 {
-        match self.a.get(level) {
-            Some(ask) => ask.price,
-            None => 0.0,
-        }
-    }
 }
 
 impl<'de> Deserialize<'de> for BinanceQuote {
@@ -156,32 +120,103 @@ impl<'de> Deserialize<'de> for BinanceQuote {
     }
 }
 
-impl From<BinanceDepth> for Depth<BinanceQuote> {
-    fn from(value: BinanceDepth) -> Self {
-        Depth {
-            time: value.E,
-            symbol: value.s.clone(),
-            stream: format!("{}@depth", value.s),
-            bids: value.b,
-            asks: value.a,
+json! {BinanceSpotDepth {
+    stream:String,
+    data: {
+            bids: Vec<BinanceQuote>,
+            asks: Vec<BinanceQuote>,
         }
     }
 }
 
-impl From<BinanceBookTicker> for Depth<BinanceQuote> {
-    fn from(value: BinanceBookTicker) -> Self {
-        Depth {
-            time: value.E,
-            symbol: value.s.clone(),
-            stream: format!("{}@bbo", value.s),
-            bids: vec![BinanceQuote {
-                price: value.b.parse().unwrap_or_default(),
-                quantity: value.B.parse().unwrap_or_default(),
-            }],
-            asks: vec![BinanceQuote {
-                price: value.a.parse().unwrap_or_default(),
-                quantity: value.A.parse().unwrap_or_default(),
-            }],
+impl BinanceSpotDepth {
+    pub fn stream(&self) -> &String {
+        &self.stream
+    }
+}
+
+impl From<BinanceSpotDepth> for Depth<BinanceQuote> {
+    fn from(value: BinanceSpotDepth) -> Self {
+        let time = now();
+        let (symbol, stream) = value.stream.split_once("@").unwrap();
+
+        match stream.split_once("@") {
+            Some((_, interval)) => Depth {
+                time,
+                symbol: symbol.to_lowercase(),
+                stream: format!("{}@depth:{}", symbol, interval).to_lowercase(),
+                bids: value.data.bids,
+                asks: value.data.asks,
+            },
+            None => Depth {
+                time,
+                symbol: symbol.to_lowercase(),
+                stream: format!("{}@depth", symbol).to_lowercase(),
+                bids: value.data.bids,
+                asks: value.data.asks,
+            },
+        }
+    }
+}
+
+json! {BinanceFutureDepth {
+    stream:String,
+    data: {
+            E:i64,
+            s:String,
+            b: Vec<BinanceQuote>,
+            a: Vec<BinanceQuote>,
+        }
+    }
+}
+
+impl BinanceFutureDepth {
+    pub fn stream(&self) -> &String {
+        &self.stream
+    }
+}
+
+impl From<BinanceFutureDepth> for Depth<BinanceQuote> {
+    fn from(value: BinanceFutureDepth) -> Self {
+        let (symbol, stream) = value.stream.split_once("@").unwrap();
+
+        match stream.split_once("@") {
+            Some((_, interval)) => Depth {
+                time: value.data.E,
+                symbol: symbol.to_lowercase(),
+                stream: format!("{}@depth:{}", symbol, interval).to_lowercase(),
+                bids: value.data.b,
+                asks: value.data.a,
+            },
+            None => Depth {
+                time: value.data.E,
+                symbol: symbol.to_lowercase(),
+                stream: format!("{}@depth", symbol).to_lowercase(),
+                bids: value.data.b,
+                asks: value.data.a,
+            },
+        }
+    }
+}
+
+impl BinanceKline {
+    pub fn stream(&self) -> &String {
+        &self.stream
+    }
+}
+
+impl From<BinanceKline> for Kline {
+    fn from(value: BinanceKline) -> Self {
+        Kline {
+            time: value.data.k.T,
+            symbol: value.data.s.to_lowercase(),
+            stream: format!("{}@kline:{}", value.data.s, value.data.k.i).to_lowercase(),
+            open: value.data.k.o.parse().unwrap_or_default(),
+            high: value.data.k.h.parse().unwrap_or_default(),
+            low: value.data.k.l.parse().unwrap_or_default(),
+            close: value.data.k.c.parse().unwrap_or_default(),
+            volume: value.data.k.v.parse().unwrap_or_default(),
+            amount: value.data.k.q.parse().unwrap_or_default(),
         }
     }
 }
@@ -384,7 +419,8 @@ pub struct BinanceCancel {
 #[serde(untagged)]
 pub enum MarketStream {
     BookTicker(BinanceBookTicker),
-    Depth(BinanceDepth),
+    SpotDepth(BinanceSpotDepth),
+    FutureDepth(BinanceFutureDepth),
     Kline(BinanceKline),
 }
 
@@ -850,12 +886,15 @@ mod tests {
     #[test]
     fn test_bookticker() {
         let s = r#"{
-                        "u":400900217,    
-                        "s":"BNBUSDT",      
-                        "b":"25.35190000",
-                        "B":"31.21000000",
-                        "a":"25.36520000",
-                        "A":"40.66000000" 
+                        "stream": "bnbusdt@bookTicker",
+                        "data":{
+                            "u":400900217,    
+                            "s":"BNBUSDT",      
+                            "b":"25.35190000",
+                            "B":"31.21000000",
+                            "a":"25.36520000",
+                            "A":"40.66000000" 
+                            }
                         }"#;
         let ticker: BinanceBookTicker = serde_json::from_str(&s).unwrap();
         println!("{:?}", ticker);
@@ -867,24 +906,20 @@ mod tests {
 
     #[test]
     fn test_depth() {
-        let s = r#"{"e":"depthUpdate",
-                          "E":1714977197753,
-                          "s":"BTCUSDT",
-                          "U":46732844503,
-                          "u":46732844710,
-                          "b":[["64280.00000000","1.51596000"],
-                               ["64279.81000000","0.18344000"],
-                               ["64278.01000000","0.01907000"],
-                               ["64277.37000000","0.00312000"],
-                               ["64276.96000000","0.00000000"]],
-                          "a":[["64280.01000000","7.16998000"],
-                               ["64280.13000000","0.00000000"],
-                               ["64280.74000000","0.00000000"],
-                               ["64280.98000000","0.00155000"],
-                               ["64281.46000000","0.00000000"]]}"#;
-        let binancedepth: BinanceDepth = serde_json::from_str(s).unwrap();
+        let s = r#"{"stream": "BTCUSDT@depth",
+                          "data":{
+                            "bids":[["64280.00000000","1.51596000"],
+                                ["64279.81000000","0.18344000"],
+                                ["64278.01000000","0.01907000"],
+                                ["64277.37000000","0.00312000"],
+                                ["64276.96000000","0.00000000"]],
+                            "asks":[["64280.01000000","7.16998000"],
+                                ["64280.13000000","0.00000000"],
+                                ["64280.74000000","0.00000000"],
+                                ["64280.98000000","0.00155000"],
+                                ["64281.46000000","0.00000000"]]}}"#;
+        let binancedepth: BinanceSpotDepth = serde_json::from_str(s).unwrap();
         let depth: Depth<BinanceQuote> = binancedepth.into();
-        assert_eq!(depth.time, 1714977197753);
         assert_eq!(depth.symbol, "btcusdt");
         assert_eq!(depth.stream, "btcusdt@depth");
         assert_eq!(depth.bids.len(), 5);
@@ -894,29 +929,32 @@ mod tests {
     #[test]
     fn test_kline() {
         let s = r#"{
-            "e": "kline",     
-            "E": 123456789,   
-            "s": "BNBUSDT",   
-            "k": {
-              "t": 123400000, 
-              "T": 123460000, 
-              "s": "BNBUSDT", 
-              "i": "1m",      
-              "f": 100,       
-              "L": 200,       
-              "o": "0.0010",  
-              "c": "0.0020",  
-              "h": "0.0025",  
-              "l": "0.0015",  
-              "v": "1000",    
-              "n": 100,       
-              "x": false,     
-              "q": "1.0000",  
-              "V": "500",     
-              "Q": "0.500",   
-              "B": "123456"   
-            }
-          }"#;
+                            "stream": "bnbusdt@kline_1m",
+                            "data":{
+                                "e": "kline",     
+                                "E": 123456789,   
+                                "s": "BNBUSDT",   
+                                "k": {
+                                "t": 123400000, 
+                                "T": 123460000, 
+                                "s": "BNBUSDT", 
+                                "i": "1m",      
+                                "f": 100,       
+                                "L": 200,       
+                                "o": "0.0010",  
+                                "c": "0.0020",  
+                                "h": "0.0025",  
+                                "l": "0.0015",  
+                                "v": "1000",    
+                                "n": 100,       
+                                "x": false,     
+                                "q": "1.0000",  
+                                "V": "500",     
+                                "Q": "0.500",   
+                                "B": "123456"   
+                                }
+                            }
+                        }"#;
         let binancekline: BinanceKline = serde_json::from_str(s).unwrap();
         let kline: Kline = binancekline.into();
 

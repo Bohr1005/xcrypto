@@ -1,9 +1,8 @@
-use crate::chat::MarketStream;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use tokio::sync::mpsc::UnboundedSender;
 use xcrypto::{
-    chat::{ErrorResponse, Request, Response},
+    chat::{ErrorResponse, Response},
     tungstenite::Message,
 };
 pub struct Subscriber {
@@ -39,49 +38,17 @@ impl Subscriber {
         Ok(())
     }
 
-    pub fn on_subscribe(&mut self, id: i64, req: Request<Vec<String>>) {
-        self.ids.insert(id, req.id);
-        self.symbols.extend(
-            req.params
-                .into_iter()
-                .map(|x| x.replace("_", ":"))
-                .collect::<Vec<String>>(),
-        );
+    pub fn on_subscribe(&mut self, id: i64, req: i64, symbols: Vec<String>) {
+        self.ids.insert(id, req);
+        self.symbols.extend(symbols);
     }
 
     pub fn is_subscribed(&self, symbol: &String) -> bool {
         self.symbols.contains(symbol)
     }
 
-    pub fn forward(&self, stream: &mut MarketStream) -> anyhow::Result<()> {
-        match stream {
-            MarketStream::BookTicker(book) => {
-                if self.is_subscribed(&book.stream()) {
-                    self.tx.send(Message::Text(serde_json::to_string(&book)?))?;
-                }
-            }
-            MarketStream::Depth(depth) => {
-                if depth.bid(0) < depth.bid(1) {
-                    depth.reverse();
-                }
-
-                if depth.bid(0) >= depth.ask(0) {
-                    return Ok(());
-                }
-
-                if self.is_subscribed(&depth.stream()) {
-                    self.tx
-                        .send(Message::Text(serde_json::to_string(&depth)?))?;
-                }
-            }
-            MarketStream::Kline(kline) => {
-                // finished kline
-                if kline.k.x && self.is_subscribed(&kline.stream()) {
-                    self.tx
-                        .send(Message::Text(serde_json::to_string(&kline)?))?;
-                }
-            }
-        }
+    pub fn forward(&self, data: &String) -> anyhow::Result<()> {
+        self.tx.send(Message::Text(data.clone()))?;
         Ok(())
     }
 

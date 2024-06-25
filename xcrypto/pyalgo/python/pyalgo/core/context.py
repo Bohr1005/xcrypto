@@ -46,7 +46,6 @@ class Context(ContextBase):
             raise Exception(f"Duplicate subscribe {symbol}")
 
         sub = self.session.subscribe(symbol, stream)
-
         key = symbol + "@" + stream
 
         if stream.startswith("kline"):
@@ -56,16 +55,15 @@ class Context(ContextBase):
 
             return bar
 
-        match stream:
-            case "depth" | "bbo":
-                depth = DepthSubscription(sub, self)
-                self.subscriptions[key] = depth
-                self.tradings[symbol] = depth
+        elif stream.startswith("depth") or stream == "bbo":
+            depth = DepthSubscription(sub, self)
+            self.subscriptions[key] = depth
+            self.tradings[symbol] = depth
 
-                return depth
+            return depth
 
-            case _:
-                raise Exception(f"Unsupported stream {stream}")
+        else:
+            raise Exception(f"Unsupported stream {stream}")
 
     def process(self):
         if event := self.session.process():

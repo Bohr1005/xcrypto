@@ -1,5 +1,5 @@
 use crate::chat::Event;
-use crate::{MarketStream, Subscriber, Trade};
+use crate::{BinanceQuote, MarketStream, Subscriber, Trade};
 use log::*;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
@@ -24,7 +24,10 @@ pub struct Market {
 
 impl Market {
     pub async fn new(addr: String) -> anyhow::Result<Self> {
-        let ws = WebSocket::client(&addr).await?;
+        let mut ws = WebSocket::client(&addr).await?;
+        let combined = r#"{"method": "SET_PROPERTY","params": ["combined", true],"id": 0}"#;
+        ws.send(Message::text(combined.to_string())).await?;
+
         Ok(Self {
             addr,
             txs: HashMap::default(),
@@ -33,7 +36,7 @@ impl Market {
             requests: HashMap::default(),
             ws,
             disconnected: false,
-            id: 0,
+            id: 1,
             time: Instant::now(),
         })
     }
@@ -207,12 +210,42 @@ impl Market {
         }
     }
 
-    fn handle_stream(&mut self, mut stream: MarketStream) {
+    fn handle_stream(&mut self, stream: MarketStream) -> anyhow::Result<()> {
+        let s = match &stream {
+            MarketStream::BookTicker(book) => book.stream().clone(),
+            MarketStream::Kline(kline) => kline.stream().clone(),
+            MarketStream::SpotDepth(depth) => depth.stream().clone(),
+            MarketStream::FutureDepth(depth) => depth.stream().clone(),
+        };
+
+        let data = match stream {
+            MarketStream::BookTicker(book) => {
+                let depth: Depth<BinanceQuote> = book.into();
+                serde_json::to_string(&depth)?
+            }
+            MarketStream::Kline(kline) => {
+                let kline: Kline = kline.into();
+                serde_json::to_string(&kline)?
+            }
+            MarketStream::SpotDepth(depth) => {
+                let depth: Depth<BinanceQuote> = depth.into();
+                serde_json::to_string(&depth)?
+            }
+            MarketStream::FutureDepth(depth) => {
+                let depth: Depth<BinanceQuote> = depth.into();
+                serde_json::to_string(&depth)?
+            }
+        };
+
         for subscriber in self.subscribers.values_mut() {
-            if let Err(e) = subscriber.forward(&mut stream) {
-                error!("{}", e);
+            if subscriber.is_subscribed(&s) {
+                if let Err(e) = subscriber.forward(&data) {
+                    error!("{}", e);
+                }
             }
         }
+
+        Ok(())
     }
 
     pub fn handle_connect(&mut self, addr: &SocketAddr, tx: &UnboundedSender<Message>) {
@@ -253,20 +286,29 @@ impl Market {
                     continue;
                 }
 
-                match self.symbols.get_mut(symbol) {
+                let symbol = if symbol.contains("kline") {
+                    symbol.replace(":", "_")
+                } else if symbol.contains("bbo") {
+                    symbol.replace("bbo", "bookTicker")
+                } else if symbol.contains("depth") {
+                    symbol.replace("depth", "depth20").replace(":", "@")
+                } else {
+                    symbol.clone()
+                };
+
+                match self.symbols.get_mut(&symbol) {
                     Some(cnt) => *cnt += 1,
                     None => {
                         self.symbols.insert(symbol.clone(), 1);
                     }
                 }
 
-                let symbol = symbol.replace(":", "_").replace("bbo", "bookTicker");
                 symbols.push(symbol);
             }
 
-            let id = self.send(addr, "SUBSCRIBE".into(), symbols).await?;
+            let id = self.send(addr, "SUBSCRIBE".into(), symbols.clone()).await?;
             if let Some(subscriber) = self.subscribers.get_mut(addr) {
-                subscriber.on_subscribe(id, req.to_owned());
+                subscriber.on_subscribe(id, req.id, symbols);
             }
         }
 
@@ -278,7 +320,11 @@ impl Market {
         match event {
             Event::Success(suc) => self.handle_success(suc),
             Event::Error(e) => self.handle_error(e),
-            Event::Stream(stream) => self.handle_stream(stream),
+            Event::Stream(stream) => {
+                if let Err(e) = self.handle_stream(stream) {
+                    error!("{}", e)
+                }
+            }
             _ => (),
         }
     }

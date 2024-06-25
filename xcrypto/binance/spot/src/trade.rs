@@ -299,15 +299,18 @@ impl Trade for SpotTrade {
     fn validate_symbol(&self, symbol: &str, stream: &str) -> bool {
         match stream.split_once(":") {
             Some((stream, interval)) => {
-                if stream != "kline" {
-                    return false;
-                }
-
-                match interval {
-                    "1s" | "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h"
-                    | "8h" | "12h" | "1d" | "3d" | "1w" | "1M" => true,
-                    _ => false,
-                }
+                match stream {
+                    "kline" => match interval {
+                        "1s" | "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h"
+                        | "8h" | "12h" | "1d" | "3d" | "1w" | "1M" => return true,
+                        _ => return false,
+                    },
+                    "depth" => match interval {
+                        "100ms" => return true,
+                        _ => return false,
+                    },
+                    _ => return false,
+                };
             }
             None => match stream {
                 "depth" | "bbo" => true,
