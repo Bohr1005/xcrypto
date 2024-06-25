@@ -222,6 +222,27 @@ After you run the binary, pos.db will appear in the current directory where you 
 
 If you need to modify the position recorded by the system, you can make changes to pos.db using SQL. After completing the modifications, simply restart the system.
 
+## Market Stream
+you can subscribe market stream via `ssession.subscribe(symbol: str,stream: str)`
+- bbo: best bid or ask's price or quantity in real-time for a specified symbol
+
+```python
+sub = ssession.subscribe("btcusdt","bbo")
+```
+
+- depth: `depth` and `depth:100ms` are supported
+
+```python
+sub = ssession.subscribe("btcusdt","depth")
+# sub = ssession.subscribe("btcusdt","depth:100ms")
+```
+
+- kline: `1s`, `1m`, `3m` `5m`, `15m`, `30m`, `1h`, `8h`, `12h`, `1d`, `3d`, `1w`, `1M` is avaliable
+
+```python
+sub = ssession.subscribe("btcusdt","kline:1m")
+```
+
 ## Python strategy package
 
 
