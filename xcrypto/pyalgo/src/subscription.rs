@@ -82,12 +82,12 @@ impl Subscription {
         self.product.tif_support(tif)
     }
 
-    fn floor_to_lot_size(&self, vol: f64) -> f64 {
-        (vol / self.lot()).floor() * self.lot()
+    pub fn floor_to_lot_size(&self, vol: f64) -> f64 {
+        vol.div_euclid(self.lot()) / (1.0 / self.lot())
     }
 
     pub fn round_price(&self, price: f64) -> f64 {
-        (price / self.tick_size()).floor() * self.tick_size()
+        price.div_euclid(self.tick_size()) / (1.0 / self.tick_size())
     }
 
     fn tick_up(&self, price: f64, n: i32) -> f64 {
