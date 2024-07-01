@@ -326,7 +326,7 @@ pub struct Order {
     trade_price: f64,
     trade_quantity: f64,
     acc: f64,
-    making: bool,
+    making: Option<bool>,
 }
 
 impl Order {
@@ -358,7 +358,7 @@ impl Order {
             trade_price: 0.0,
             trade_quantity: 0.0,
             acc: 0.0,
-            making: false,
+            making: None,
         }
     }
 
@@ -432,8 +432,9 @@ impl Order {
     fn acc(&self) -> f64 {
         self.acc
     }
+
     #[getter]
-    fn making(&self) -> bool {
+    fn making(&self) -> Option<bool> {
         self.making
     }
 
@@ -602,7 +603,7 @@ mod tests {
         assert_eq!(o.trade_price, 0.0);
         assert_eq!(o.trade_quantity, 0.0);
         assert_eq!(o.acc, 0.0);
-        assert!(!o.making);
+        assert!(!o.making.unwrap());
     }
     #[test]
     fn test_depth() {

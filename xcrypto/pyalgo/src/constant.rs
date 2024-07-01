@@ -18,7 +18,6 @@ pub enum Phase {
 pub enum Side {
     BUY,
     SELL,
-    UNDEF,
 }
 
 #[pyclass]
@@ -36,7 +35,6 @@ pub enum OrderType {
     TAKE_PROFIT_LIMIT,
     TAKE_PROFIT_MARKET,
     TRAILING_STOP_MARKET,
-    UNDEF,
 }
 
 #[pyclass]

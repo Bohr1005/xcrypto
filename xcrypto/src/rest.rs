@@ -37,7 +37,7 @@ impl Rest {
     pub fn apikey(&self) -> &str {
         &self.apikey
     }
-    
+
     pub async fn get(
         &self,
         path: &str,
@@ -145,21 +145,21 @@ impl Rest {
         id: u32,
     ) -> anyhow::Result<Response> {
         let client_order_id = u64::from(session_id) << 32 | u64::from(id);
-        self.post(
-            path,
-            &[
-                ("symbol".into(), symbol),
-                ("side".into(), side),
-                ("type".into(), order_type),
-                ("timeInForce".into(), tif),
-                ("quantity".into(), quantity),
-                ("price".into(), price),
-                ("newClientOrderId".into(), client_order_id.to_string()),
-                ("newOrderRespType".into(), "RESULT".into()),
-            ],
-            true,
-        )
-        .await
+        let mut params = vec![
+            ("symbol".into(), symbol),
+            ("side".into(), side),
+            ("type".into(), order_type),
+            ("quantity".into(), quantity),
+            ("price".into(), price),
+            ("newClientOrderId".into(), client_order_id.to_string()),
+            ("newOrderRespType".into(), "RESULT".into()),
+        ];
+
+        if tif != "UNDEF" {
+            params.push(("timeInForce".into(), tif));
+        }
+
+        self.post(path, &params, true).await
     }
 
     pub async fn cancel(&self, path: &str, symbol: String, orig: u64) -> anyhow::Result<Response> {

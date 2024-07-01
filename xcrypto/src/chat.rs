@@ -191,6 +191,7 @@ pub enum Tif {
     FOK,
     GTX,
     GTD,
+    UNDEF,
 }
 
 impl FromStr for Tif {
@@ -202,7 +203,7 @@ impl FromStr for Tif {
             "FOK" => Ok(Self::FOK),
             "GTX" => Ok(Self::GTX),
             "GTD" => Ok(Self::GTD),
-            _ => unreachable!(),
+            _ => Ok(Self::UNDEF),
         }
     }
 }
