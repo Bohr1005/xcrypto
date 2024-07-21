@@ -110,7 +110,11 @@ impl Market {
             self.time = Instant::now();
 
             match WebSocket::client(&self.addr).await {
-                Ok(ws) => {
+                Ok(mut ws) => {
+                    let combined =
+                        r#"{"method": "SET_PROPERTY","params": ["combined", true],"id": 0}"#;
+                    ws.send(Message::text(combined.to_string())).await?;
+
                     self.ws = ws;
                     self.disconnected = false;
 

@@ -2,6 +2,8 @@ use crate::{chat::Product, phase::TradingPhase, OrderType, Phase, Position, Tif}
 use chrono::DateTime;
 use chrono_tz::Tz;
 use pyo3::prelude::*;
+use rust_decimal::prelude::*;
+use rust_decimal::{prelude::FromPrimitive, Decimal};
 
 #[pyclass]
 pub struct Subscription {
@@ -83,11 +85,19 @@ impl Subscription {
     }
 
     pub fn floor_to_lot_size(&self, vol: f64) -> f64 {
-        vol.div_euclid(self.lot()) / (1.0 / self.lot())
+        let mut vol = Decimal::from_f64(vol).unwrap();
+        let lot = Decimal::from_f64(self.lot()).unwrap();
+
+        vol = (vol / lot).floor() * lot;
+        vol.to_f64().unwrap()
     }
 
     pub fn round_price(&self, price: f64) -> f64 {
-        price.div_euclid(self.tick_size()) / (1.0 / self.tick_size())
+        let mut price = Decimal::from_f64(price).unwrap();
+        let tick_size = Decimal::from_f64(self.tick_size()).unwrap();
+
+        price = (price / tick_size).round() * tick_size;
+        price.to_f64().unwrap()
     }
 
     fn tick_up(&self, price: f64, n: i32) -> f64 {
