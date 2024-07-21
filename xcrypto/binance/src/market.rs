@@ -2,6 +2,7 @@ use crate::chat::Event;
 use crate::{BinanceQuote, MarketStream, Subscriber, Trade};
 use log::*;
 use serde::{Deserialize, Serialize};
+use std::fmt::format;
 use std::net::SocketAddr;
 use std::{collections::HashMap, fmt::Debug};
 use tokio::sync::mpsc::UnboundedSender;
@@ -111,8 +112,13 @@ impl Market {
 
             match WebSocket::client(&self.addr).await {
                 Ok(mut ws) => {
-                    let combined =
-                        r#"{"method": "SET_PROPERTY","params": ["combined", true],"id": 0}"#;
+                    let combined = format!(
+                        r#"{{"method": "SET_PROPERTY","params": ["combined", true],"id":{}}}"#,
+                        self.id
+                    );
+
+                    self.id += 1;
+
                     ws.send(Message::text(combined.to_string())).await?;
 
                     self.ws = ws;
