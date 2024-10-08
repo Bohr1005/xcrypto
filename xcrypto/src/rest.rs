@@ -148,12 +148,25 @@ impl Rest {
         let mut params = vec![
             ("symbol".into(), symbol),
             ("side".into(), side),
-            ("type".into(), order_type),
+            ("type".into(), order_type.clone()),
             ("quantity".into(), quantity),
-            ("price".into(), price),
             ("newClientOrderId".into(), client_order_id.to_string()),
             ("newOrderRespType".into(), "RESULT".into()),
         ];
+
+        match order_type.as_str() {
+            "STOP_MARKET" => {
+                // For stop market orders, the price is treated as stopPrice
+                params.push(("stopPrice".into(), price));
+            }
+            "MARKET" => {
+                // Market orders don't need a price, so no action needed
+            }
+            _ => {
+                // For other types (e.g., LIMIT), use price
+                params.push(("price".into(), price));
+            }
+        }
 
         if tif != "UNDEF" {
             params.push(("timeInForce".into(), tif));
