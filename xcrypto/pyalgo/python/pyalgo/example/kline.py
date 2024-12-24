@@ -35,6 +35,6 @@ if __name__ == "__main__":
     )
 
     depth = session.subscribe("dogeusdt", "depth")
-    kline = session.subscribe("btcusdt", "kline:1s")
+    kline = session.subscribe("btcusdt", "kline:1m")
     demo = Demo(depth, kline)
     eng.run()
